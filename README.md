@@ -8,4 +8,9 @@ It's for beginner's who just started learning machine learning  and trying to bu
 You can go through this blog if you want read more about it  [link of the blog by Towards data science](https://towardsdatascience.com/linear-regression-on-boston-housing-dataset-f409b7e4a155)
 
 We use both Statsmodels as well Sklearn libraries to build the model.
-We used statsmodel only because statsmodel offer's a very good function known as summary , with the help of summary we can see the whole summary of the model at a single place with the singe line of code and based on that summary we will evaluate our model
+We used statsmodel only because statsmodel offer's a very good function known as summary , with the help of summary we can see the whole summary of the model at a single place with the singe line of code and based on that summary we will evaluate our model.
+
+You can go through this [Link](https://scikit-learn.org/stable/modules/linear_model.html) if you want to learn more about Linear Regression by using Sklearn library.
+
+
+You can go through this [Link](https://www.statsmodels.org/stable/regression.html) if you want to learn more about Linear Regression by using Statsmodels library.
