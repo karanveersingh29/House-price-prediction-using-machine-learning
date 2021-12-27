@@ -1,0 +1,330 @@
+# Here we are importing all the necessary libraries
+
+
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import r2_score 
+from sklearn.metrics import mean_squared_error
+import statsmodels.api as sm
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+from sklearn.feature_selection import RFE
+
+import warnings
+warnings.filterwarnings('ignore')
+
+df = pd.read_csv('Housing.csv')
+df.head()
+df.info()
+# We can clearly see that there are no null values and all the columns are in right format
+df.isna().sum()
+df.describe()
+
+### Here we are visualizing our data to gain some insights from it.
+
+# Here we are trying to see the correlation b/w all the numerical variables and based on that we can clearly see that area and bathrooms has some coorelation with price
+
+
+plt.figure(figsize = (10,8))
+sns.heatmap(df.corr() , annot = True  )
+sns.pairplot(df)
+
+
+# To see all the columns excluding int 
+df.select_dtypes(exclude=['int64']).columns.tolist()
+
+
+# Let's plot boxplot for categorical variables
+
+plt.figure(figsize=(16 , 12))
+plt.subplot(2,3,1)
+sns.boxplot(x = 'mainroad'  , y = 'price' , data = df)
+plt.subplot(2,3,2)
+sns.boxplot(x = 'guestroom'  , y = 'price' , data = df)
+plt.subplot(2,3,3)
+sns.boxplot(x = 'basement'  , y = 'price' , data = df)
+plt.subplot(2,3,4)
+sns.boxplot(x = 'hotwaterheating'  , y = 'price' , data = df)
+plt.subplot(2,3,5)
+sns.boxplot(x = 'airconditioning'  , y = 'price' , data = df)
+plt.subplot(2,3,6)
+sns.boxplot(x = 'furnishingstatus'  , y = 'price' , data = df)
+plt.show()
+
+plt.figure(figsize =  (12,6))
+plt.subplot(1,2,1)
+sns.boxplot(x = 'furnishingstatus' , y = 'price' , hue =  'airconditioning' , data = df )
+plt.subplot(1,2,2)
+sns.boxplot(x = 'furnishingstatus' , y = 'price' , hue =  'basement' , data = df )
+
+
+## Here we are convertinng categorical variables into 1 and 0's
+
+df['hotwaterheating'].replace(('yes' , 'no'),(1,0) , inplace = True )
+df['mainroad'].replace(('yes' , 'no'),(1,0) , inplace = True )
+df['guestroom'].replace(('yes' , 'no'),(1,0) , inplace = True )
+df['basement'].replace(('yes' , 'no'),(1,0) , inplace = True )
+df['airconditioning'].replace(('yes' , 'no'),(1,0) , inplace = True )
+df['prefarea'].replace(('yes' , 'no'),(1,0) , inplace = True )
+
+
+
+#Converted every categoriccal variables into binary
+
+status = pd.get_dummies(df['furnishingstatus'])
+status = pd.get_dummies(df['furnishingstatus'] , drop_first = True)
+
+
+## Here we are concating dummies variables to the main dataframe
+df = pd.concat([df , status] , axis = 1)
+
+df.drop('furnishingstatus' ,axis =1 , inplace = True)
+
+
+
+# ####  -Now we have converted all the categorical variables into numerical variables 
+
+# #### **** Lets's split our dataset into trainig and test set , for training and testing of the model. ****
+
+X = df.drop('price' , axis = 1)
+
+y = df.iloc[: , :1]
+
+# Now we are splitting our dataset into training and testing set.
+
+X_train , X_test , y_train , y_test = train_test_split(X, y ,test_size = 0.2)
+
+Df_train , df_test =  train_test_split(df , test_size = 0.25)
+
+
+
+
+## Now we are scaling the dataset,  so that our model can easily generalize
+
+scaling =MinMaxScaler()
+
+#### Here we are converting every variable on same scale by using MinMaxScaling
+
+cols = ['price' , 'area' , 'bedrooms' , 'bathrooms' ,'stories']
+Df_train[cols] = scaling.fit_transform(Df_train[cols])
+plt.figure(figsize = (16 , 10))
+
+## Here we are trying see the correlatio b/w my indepedent variables using Heatmap.
+sns.heatmap(Df_train.corr() , annot = True , cmap="YlGnBu")
+
+# Now we are trying to see relationship b/w area and price 
+plt.scatter(Df_train.area , Df_train.price )
+plt.xlabel('Area')
+plt.ylabel('Price')
+plt.title('AREA VS PRICE')
+plt.show()
+
+
+test_scale_columns = ['area' , 'bedrooms' , 'bathrooms' , 'stories']
+
+y_train = Df_train.pop('price')
+X_train = Df_train
+
+X_test[test_scale_columns] = scaling.fit_transform(X_test[test_scale_columns])
+y_test['price'] = scaling.fit_transform(y_test[['price']])
+
+scale_columns = ['area' , 'bedrooms' , 'bathrooms' , 'stories']
+X_train[scale_columns] = scaling.fit_transform(X_train[scale_columns])
+y_train[['price']] = scaling.fit_transform(y_train[['price']])
+
+### Building model with only one variable
+
+ar = X_train.iloc[: ,  :1]
+
+# Now we are building Linear Regression model 
+ar_model = LinearRegression()
+
+ar_model.fit(ar , y_train)
+ar_model.intercept_
+ar_model.coef_
+
+## Now we are visualzing our model with only one variable i.e, area
+plt.scatter(ar , y_train)
+plt.xlabel('Area')
+plt.ylabel('Price')
+plt.plot(ar , 0.12284002 + 0.56940017*ar , 'r')
+
+
+val = X_test.iloc[: , :1]
+
+predicted_val = ar_model.predict(val)
+
+
+plt.scatter(y_test , val)
+plt.plot(val , predicted_val , 'r')
+r2_score(y_test , predicted_val)
+
+
+# ### Now let's create a model with two variables 
+
+two_vars = X_train[['area' , 'bathrooms']]
+
+
+## Now we are building model with two variables i.e, area  and bathroom
+tw_lr_X_test = X_test[['area' , 'bathrooms']]
+tw_lr = LinearRegression()
+tw_lr.fit(two_vars , y_train)
+tw_lr.coef_
+tw_lr.intercept_
+
+# Now we are testing our model on test data
+tw_lr_predicted = tw_lr.predict(tw_lr_X_test)
+
+r2_score(y_test , tw_lr_predicted)
+
+
+# #### We can clearly see that the value of r2_score increased after adding the variables
+
+mean_squared_error(y_test , tw_lr_predicted)
+
+
+# ### No we are making model by adding all the variables
+
+all_vars_model = LinearRegression()
+
+all_vars_model.fit(X_train , y_train)
+all_vars_model.coef_
+all_vars_model.intercept_
+
+
+## Now we are tesing our model on test data
+X_test_predicted = all_vars_model.predict(X_test)
+r2_score(X_test_predicted , y_test)
+
+## We are plotting our predicted and actual value to know the error b/w actual and predicted value.
+plt.scatter(X_test_predicted , y_test)
+
+
+## Now we are trying to build our model with statsmodels library.
+
+#### First we build model with all the variabless  , and after looking at the different evaluation metrics we keep dropping the insignificant variables inorder to increase the performance of the model
+
+X_train_lm = sm.add_constant(X_train)
+sm_lr = sm.OLS(y_train  , X_train_lm).fit()
+sm_lr.params
+sm_lr.summary()
+
+# We are trying to see the VIF of the variables
+
+vif = pd.DataFrame()
+vif['Features'] = X_train.columns
+vif['VIF'] = [variance_inflation_factor(X_train.values , i) for i in range(X_train.shape[1])]
+vif = round(vif , 2)
+vif = vif.sort_values(by = 'VIF' , ascending = False)
+
+
+### ****Here we are deleting the row with very high p-values i.e, 'Bedrooms ****
+
+updated_X_train = X_train_lm.drop('bedrooms' , axis = 1)
+
+upd_sm_model = sm.OLS(y_train , updated_X_train).fit()
+
+upd_sm_model.params
+upd_sm_model.summary()
+
+## Here we are looking at the VIF score
+
+Vif = pd.DataFrame()
+Vif['Features'] = updated_X_train.columns
+Vif['VIF'] = [variance_inflation_factor(updated_X_train.values , i) for i in range(updated_X_train.shape[1])]
+Vif = round(vif , 2)
+Vif = Vif.sort_values(by = 'VIF' , ascending = False)
+
+
+## Here we are tying to remove the column i.e, 'mainroad'
+
+upd_X_train = updated_X_train.drop('mainroad' , axis = 1)
+
+upd_sm =  sm.OLS(y_train , upd_X_train).fit()
+upd_sm.params
+upd_sm.summary()
+
+
+
+Vvif = pd.DataFrame()
+Vvif['Features'] = upd_X_train.columns
+Vvif['VIF'] = [variance_inflation_factor(upd_X_train.values , i) for i in range(upd_X_train.shape[1])]
+Vvif = round(Vvif , 2)
+Vvif = Vvif.sort_values(by = 'VIF' , ascending = False)
+
+
+## Now we are dropping 'Semi-Furnished' column 
+
+x = upd_X_train.drop('semi-furnished' , axis = 1)
+unfur_model = sm.OLS(y_train , x).fit()
+unfur_model.params
+unfur_model.summary()
+
+## Now we are lookinng at the VIF score
+Vvvif = pd.DataFrame()
+Vvvif['Features'] = x.columns
+Vvvif['VIF'] = [variance_inflation_factor(x.values , i) for i in range(x.shape[1])]
+Vvvif = round(Vvif , 2)
+Vvvif = Vvif.sort_values(by = 'VIF' , ascending = False)
+
+
+#### Now we are good to go with this model , because all the varibles have very small p-value and the value of VIF is also less than 5
+
+X_test = sm.add_constant(X_test)
+predicted_y = unfur_model.predict(X_test)
+
+
+## Now we are building model by dropping the model by dropping 'bedrooms' , 'mainroad' , 'semi-furnished' these variables.
+
+X_test = X_test.drop(['bedrooms' , 'mainroad' , 'semi-furnished' ] , axis = 1)
+sns.distplot(y_test - predicted_y)
+
+## We are plotting the predicted and actual values.
+
+plt.figure(figsize = (8,6))
+plt.scatter(predicted_y , y_test)
+plt.xlabel('Predicted Y' , fontsize = 15)
+plt.ylabel('Y_test' , fontsize = 15)
+plt.title('Y_predicted VS Y_test' , fontsize = 20)
+plt.show()
+
+### Now we created the model ,accuracy is not too good but it's fine.
+
+
+
+### We can predict the price of house with the help of below formula
+price = area *0.323844 + bathrooms * 0.268666  + stories * 0.126261 + guestroom * 0.029472 + basement * 0.025465 + hotwaterheating * 0.076315 + airconditioning * 0.078979 + parking * 0.024124 + prefarea * 0.056786 + unfurnished * -0.032490
+
+
+## NOW WE WILL BUILD MODEL USING RFE (Recursive Feature Elimination)
+
+
+
+
+linear_model = LinearRegression()
+linear_model.fit(X_train , y_train)
+rfe_model = RFE(linear_model , 10)
+rfe_model = rfe_model.fit(X_train , y_train)
+
+list(zip(X_train.columns , rfe_model.support_ , rfe_model.ranking_)
+cols = X_train.columns[rfe_model.support_]
+cols = X_train[col]
+sm_x_train = sm.add_constant(cols)
+
+
+
+sm_model = sm.OLS( y_train ,  sm_x_train).fit()
+sm_model.summary()
+
+
+updated_sm_x_train = sm_x_train.drop('guestroom' , axis = 1
+lrrr_model = sm.OLS(y_train , updated_sm_x_train).fit()
+lrrr_model.summary()
+
+# #### The formla for predicting the price of the house - 
+
+# price = area *0.323844 + bathrooms * 0.268666  + stories * 0.126261 + guestroom * 0.029472 + basement * 0.025465 + hotwaterheating * 0.076315 + airconditioning * 0.078979 + parking * 0.024124 + prefarea * 0.056786 + unfurnished * -0.032490
