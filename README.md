@@ -1,4 +1,4 @@
-# Multiple-linear-regression-on-Housing-Dataset
+# House Price Prediction Using Machine Learning (Multiple Linear Regression)
 
 This is small experient of predicting the prices of the house in Delhi
 Trying to find the key driving features for the prediction of the price of the house
