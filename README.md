@@ -14,3 +14,6 @@ You can go through this [Link](https://scikit-learn.org/stable/modules/linear_mo
 
 
 You can go through this [Link](https://www.statsmodels.org/stable/regression.html) if you want to learn more about Linear Regression by using Statsmodels library.
+
+DATA-
+You can download data from this [Link](https://drive.google.com/open?id=16RQztUqCfJOlbooHqYlJrp6Q7iL65uZB)
